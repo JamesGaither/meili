@@ -1,0 +1,6 @@
+[PATH]
+p_inbox = path/to/photo_dump
+pre_process = path/to/photos_preprocessing
+raw_path = path/to/photos_raw
+reject_path = path/to/reject
+video_path = path/to/Videos
