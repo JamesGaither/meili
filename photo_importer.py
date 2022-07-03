@@ -1,5 +1,7 @@
-# A simple script to import files and handle raw photos
-# Also handles a bit of photo processing
+'''
+A simple script to import files and handle raw photos
+Also handles a bit of photo processing
+'''
 
 import os
 import sys
@@ -23,13 +25,15 @@ args = parser.parse_args()
 
 # Variables that might change
 valid_extensions = ['.tif', '.cr2', '.jpg', '.jpeg', '.png']
-video_extensions = ['.mp4']
+video_extensions = ['.mp4', '.mkv']
 
 # Variables that should not normally be changed
 script_dir = os.path.dirname(__file__)
-config_file = 'importer.ini'
+config_file = Path(f'{script_dir}/importer.ini')
 allpics = []
 reject_count = 0
+
+# For handling the serial number, read a pickle file
 serial_file = Path(f'{script_dir}/serial.pk')
 try:
     with open(serial_file, 'rb') as f:
@@ -109,7 +113,8 @@ def process():
             date_taken = datetime.strptime(get_date_taken(pic),
                                            '%Y:%m:%d %H:%M:%S')
             new_filepath = os.path.join(storage_path,
-                                        datetime.strftime(date_taken, '%Y'))
+                                        datetime.strftime(date_taken, '%Y'),
+                                        datetime.strftime(date_taken, '%m'))
         except Exception:
             print(f"Error raised on import of EXIF tag for {pic}")
             date_taken = None
@@ -122,8 +127,7 @@ def process():
         else:
             new_name = f'{serial}{extension}'
             new_jname = f'{serial}.jpg'
-        
-        
+
         # Let's move this file to the correct destination
         if not os.path.exists(new_filepath):
             if not args.dryrun:
@@ -144,12 +148,12 @@ def process():
             else:
                 if not os.path.exists(raw_path):
                     os.makedirs(raw_path)
-                subprocess.run(args=['darktable-cli', 
+                subprocess.run(args=['darktable-cli',
                     os.path.join(new_filepath, new_name),
-                    os.path.join(pre_process, 
+                    os.path.join(pre_process,
                     datetime.strftime(date_taken, '%Y'), new_jname)])
-    
-        
+
+
 if __name__ == '__main__':
     print('Welcome to image_importer')
     process()

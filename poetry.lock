@@ -1,0 +1,21 @@
+[[package]]
+name = "exifread"
+version = "3.0.0"
+description = "Read Exif metadata from tiff and jpeg files."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+dev = ["mypy (==0.950)", "pylint (==2.13.8)"]
+
+[metadata]
+lock-version = "1.1"
+python-versions = "^3.10"
+content-hash = "59dba60727d06c75ebd3be165ca9a5090c5e7435556afa0e4b76d6525c731fee"
+
+[metadata.files]
+exifread = [
+    {file = "ExifRead-3.0.0-py3-none-any.whl", hash = "sha256:2c5c59ef03b3bbee75b82b82d2498006b3c13509f35c9a76c7552faff73fa2d5"},
+    {file = "ExifRead-3.0.0.tar.gz", hash = "sha256:0ac5a364169dbdf2bd62f94f5c073970ab6694a3166177f5e448b10c943e2ca4"},
+]
