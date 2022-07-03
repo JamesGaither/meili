@@ -21,6 +21,8 @@ parser.add_argument("--dryrun", action="store_true",
                     help="Do not move files around or increment counter")
 parser.add_argument("--debug", action="store_true",
                     help="Get some extra info for troubleshooting")
+parser.add_argument("--get-serial", action="store_true",
+                    help="Get current serial number")
 args = parser.parse_args()
 
 # Variables that might change
@@ -155,7 +157,10 @@ def process():
 
 
 if __name__ == '__main__':
-    print('Welcome to image_importer')
+    print('Welcome to Meili image_importer')
+    if args.get_serial:
+        print(f'The current serial number is: {serial}')
+        sys.exit()
     process()
     if not args.dryrun:
         with open(serial_file, 'wb') as f:
