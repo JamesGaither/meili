@@ -13,7 +13,27 @@ import configparser
 from datetime import datetime
 from pathlib import Path
 import exifread
+import logging
 
+class CustomFormatter(logging.Formatter):
+    '''
+    A custom formatter for the logging module that outputs
+    color.
+    '''
+    def __init__(self):
+        FMT = "[{levelname:^9}]: {message}"
+        self.FORMATS = {
+            logging.DEBUG: FMT,
+            logging.INFO: f"\33[36m{FMT}\33[0m",
+            logging.WARNING: f"\33[33m{FMT}\33[0m",
+            logging.ERROR: f"\33[31m{FMT}\33[0m",
+            logging.CRITICAL: f"\33[1m\33[31m{FMT}\33[0m",
+        }
+
+    def format(self, record):
+        log_fmt = self.FORMATS[record.levelno]
+        formatter = logging.Formatter(log_fmt, style="{")
+        return formatter.format(record)
 
 # Handle arguments
 parser = argparse.ArgumentParser()
@@ -24,6 +44,18 @@ parser.add_argument("--debug", action="store_true",
 parser.add_argument("--get-serial", action="store_true",
                     help="Get current serial number")
 args = parser.parse_args()
+
+# Make a logger
+console = logging.StreamHandler()
+console.setFormatter(CustomFormatter())
+logging.basicConfig(
+        level=logging.DEBUG,
+        handlers=[console],
+)
+log = logging.getLogger(__file__)
+
+# Exclude exifread from logging
+logging.getLogger("exifread").setLevel(logging.CRITICAL)
 
 # Variables that might change
 valid_extensions = ['.tif', '.cr2', '.jpg', '.jpeg', '.png']
@@ -40,14 +72,15 @@ serial_file = Path(f'{script_dir}/serial.pk')
 try:
     with open(serial_file, 'rb') as f:
         serial = pickle.load(f)
-    if args.debug:
-        print("pickle file found")
+    log.debug("pickle file found")
 except:
     serial = 0
+    log.debug('pickle file not found')
+log.info(f'serial number starting at: {serial}')
 
 # Handle config file
 if not os.path.exists(config_file):
-    print(f'Missing {config_file}. Please add {config_file}')
+    log.critical(f'Missing {config_file}. Please add {config_file}')
     sys.exit(1)
 config = configparser.ConfigParser()
 config.read(config_file)
@@ -71,7 +104,7 @@ def reject(file):
         os.makedirs(reject_path)
     file_name = os.path.basename(file)
     if args.dryrun:
-        print("ACTION: Move file to reject path")
+        log.info("ACTION: Move file to reject path")
     else:
         shutil.move(file, f'{reject_path}/{file_name}')
 
@@ -83,7 +116,7 @@ def reject_video(video):
         os.makedirs(video_path)
     file_name = os.path.basename(video)
     if args.dryrun:
-        print(f"ACTION: Move {video} to {video_path}")
+        log.info(f"ACTION: Move {video} to {video_path}")
     else:
         shutil.move(video, f'{video_path}/{file_name}')
 
@@ -99,11 +132,11 @@ def process():
         extension = extension.lower()
         if extension not in valid_extensions:
             if extension in video_extensions:
-                print(f"{pic} appears to be a video: moving to {video_path}")
+                log.info(f"{pic} appears to be a video: moving to {video_path}")
                 reject_video(pic)
                 continue
             else:
-                print(f"{pic} does not have a valid photo extension:rejecting")
+                log.info(f"{pic} does not have a valid photo extension:rejecting")
                 reject(pic)
                 continue
         if extension == ".cr2":
@@ -118,7 +151,8 @@ def process():
                                         datetime.strftime(date_taken, '%Y'),
                                         datetime.strftime(date_taken, '%m'))
         except Exception:
-            print(f"Error raised on import of EXIF tag for {pic}")
+            log.warning(f"Error raised on import of EXIF tag for {pic}"
+                        "date in filename will be set to 'nodate'")
             date_taken = None
             new_filepath = os.path.join(storage_path, 'nodate')
         if date_taken != None:
@@ -135,18 +169,18 @@ def process():
             if not args.dryrun:
                 os.makedirs(new_filepath)
             else:
-                print(f'ACTION: create folder: {new_filepath}')
+                log.info(f'ACTION: create folder: {new_filepath}')
         if not args.dryrun:
             shutil.move(pic, os.path.join(new_filepath, new_name))
         else:
-            print(f'ACTION: move {pic} to '
-                  f'{os.path.join(new_filepath, new_name)}')
+            log.info(f'ACTION: move {pic} to '
+                     f'{os.path.join(new_filepath, new_name)}')
 
         # Make a jpg for this if it is cr2
         if extension == ".cr2":
             # Create a jpg version
             if args.dryrun:
-                print("ACTION: call dark-table and make jpeg")
+                log.info("ACTION: call dark-table and make jpeg")
             else:
                 if not os.path.exists(raw_path):
                     os.makedirs(raw_path)
@@ -157,13 +191,13 @@ def process():
 
 
 if __name__ == '__main__':
-    print('Welcome to Meili image_importer')
+    log.info('Welcome to Meili image_importer')
     if args.get_serial:
-        print(f'The current serial number is: {serial}')
+        log.info(f'The current serial number is: {serial}')
         sys.exit()
     process()
     if not args.dryrun:
         with open(serial_file, 'wb') as f:
             pickle.dump(serial, f)
     else:
-        print('ACTION: Dumping pickle')
+        log.info('ACTION: Dumping pickle')
